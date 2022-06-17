@@ -1,0 +1,827 @@
+// Digital IC Tester. It can check 7400, 7402, 7404, 7408 & 7432
+// By: Ketan
+
+
+#include<reg51.h>
+#include<string.h>
+#define port P1
+#define icpt P2           // Pins of IC under test
+#define dataport P3   // Datapins of LCD with port-3
+#define key P0  	      // Port-0 for keypad
+#define sec 25
+
+//LCD Control Pins with Port-1pins
+sbit rs = port^4;	     
+sbit rw = port^5;
+sbit en = port^6;
+
+//keypad row and column interfacing with   port-0 pins
+sbit col1=key^4;               
+sbit col2=key^5;
+sbit col3=key^6;
+sbit row1=key^0;
+sbit row2=key^1;
+sbit row3=key^2;
+sbit row4=key^3;
+
+//Defining pins connection of IC under test with microcontroller ports P2 and P0
+sbit icp1=icpt^0;
+sbit icp2=icpt^1; 	sbit icp3=port^0;
+sbit icp4=icpt^2;
+sbit icp5=icpt^3;	sbit icp6=port^1;
+sbit icp9=icpt^4;	sbit icp8=port^2;
+sbit icp10=icpt^5;	sbit icp11=port^3;
+sbit icp12=icpt^6;
+sbit icp13=icpt^7;
+
+int i,j,k,l,m,check=0,check2=0,check3=0,check4=0,check5=0;
+int icno[4]={0,0,0,0};
+
+int dig_one=7;		//7400 NAND gate IC
+int dig_two=4;
+int dig_three=0;
+int dig_four=0;
+
+int dig_five=7;		//7402 nor gate IC
+int dig_six=4;
+int dig_sev=0;
+int dig_egt=2;
+
+int dig_nine=7;	   //7404 hex inverter
+int dig_ten=4;
+int dig_ele=0;
+int dig_twe=4;
+
+int dig_tht=7;	   //7408 AND gate IC
+int dig_fourt=4;
+int dig_fif=0;
+int dig_sixt=8;
+
+int dig_sevt=7;	   //7432 OR gate IC
+int dig_egtt=4;
+int dig_nnt=3;
+int dig_tt=2;
+
+void delay(unsigned int msec) //Time delay function
+{
+	int i,j ;
+	for (i=0;i<msec;i++)
+	  for (j=0;j<1275;j++);
+}
+
+void lcd_cmd(unsigned char item)  //Function to send command to LCD
+{
+	dataport = item;
+	rs= 0;
+	rw=0;
+	en=1;
+	delay(1);
+	en=0;
+	return;
+}
+
+void lcd_data(unsigned char item)  //Function to send data on LCD
+{
+	dataport = item;
+	rs= 1;
+	rw=0;
+	en=1;
+	delay(1);
+	en=0;
+	return;
+}
+void lcd_data_string(unsigned char *str) // Function to send string on LCD
+{
+	int i=0;
+	while(str[i]!='\0')
+	{
+	  lcd_data(str[i]);
+	  i++;
+	  delay(10);
+	}
+return;
+}
+
+void lcd(unsigned char str[50]) // Function to Initialize LCD
+{
+	lcd_cmd (0x38);
+	lcd_cmd (0x0e);
+	delay (sec);
+	lcd_cmd (0x01);
+	delay (sec);
+	lcd_cmd (0x80);
+	delay (sec);
+	lcd_data_string (str);
+}
+
+/*void inputs ()
+{
+	icpt=0; //port 2 as output port i.e. input for IC under test
+	icpt^1=1	
+} */
+
+void inv_gt()				//function to check 7404 hex inverter
+{
+//defining input and output pins of microcontroller
+icp1 = 0; icp2 = 1;				//g1
+icp3 = 0; icp4 = 1; 		    //g2
+icp5 = 0; icp6 = 1; 	        //g3
+icp9 = 0; icp8 = 1;	 			//g4
+icp11 = 0; icp10 = 1;	        //g5
+icp13 = 0; icp12 = 1;	        //g6 
+         
+icp1=icp3=icp5=icp9=icp11=icp13=1;
+
+delay(sec);
+
+	if(icp2 && icp4 && icp6 && icp8 && icp10 && icp12   == 0)
+	{
+		delay(sec);
+		icp1=icp3=icp5=icp9=icp11=icp13=0;
+		delay(sec);
+		
+		if(icp2 && icp4 && icp6 && icp8 && icp10 && icp12 == 1)
+		 
+		{
+			lcd_cmd(0x01);
+			delay(10);
+			lcd_data_string("IC OK");
+		}
+	}
+	else
+	{
+		 lcd_cmd(0x01);
+		 delay(10);
+		 lcd_data_string("IC not OK");
+		 
+	}
+	//goto again;
+}
+
+void and_gt()    //function to check 7408 AND Gate
+{
+//defining input and output pins of  microcontroller
+icp1 = 0; icp2 = 0;icp3=1;	     //g1
+icp4 = 0; icp5 = 0; icp6=1;	     //g2
+icp9 = 0; icp10= 0; icp8=1;      //g3
+icp12= 0; icp13= 0; icp11=1;    //g4
+icp1=icp2=icp4=icp5=icp9=icp10=icp12=icp13=0;
+	if(icp3 && icp6 && icp8 && icp11 == 0)
+	{
+	icp1=icp2=icp4=icp5=icp9=icp10=icp12=icp13=1;
+		if(icp3 && icp6 && icp8 && icp11 == 1)
+		{
+			icp1=icp4=icp9=icp12=0;                      
+			icp2=icp5=icp10=icp13=1;
+			if(icp3 && icp6 && icp8 && icp11 == 0)
+			{
+			 icp1=icp4=icp9=icp12=1;  icp2=icp5=icp10=icp13=0;
+			if(icp3 && icp6 && icp8 && icp11 == 0)
+				{
+					lcd_cmd(0x01);
+					delay(10);
+					lcd_data_string("IC OK");
+				}
+			}
+		}
+	}
+	else
+	{
+		 lcd_cmd(0x01);
+		 delay(10);
+		 lcd_data_string("IC not OK");
+		 
+	}
+	//goto again;
+}	
+
+void or_gt()    //function to check 7432 OR Gate
+{
+//defining input and output pins	 of  microcontroller
+	icp1 = 0; icp2 = 0;icp3=1;	    //g1
+	icp4 = 0; icp5 = 0; icp6=1;	    //g2
+	icp9 = 0; icp10= 0; icp8=1;     //g3
+	icp12= 0; icp13= 0; icp11=1;  //g4
+	
+
+	icp1=icp2=icp4=icp5=icp9=icp10=icp12=icp13=1;
+
+	if(icp3 && icp6 && icp8 && icp11 == 1)
+	{
+		icp1=icp2=icp4=icp5=icp9=icp10=icp12=icp13=0;
+		if(icp3 && icp6 && icp8 && icp11 == 0)
+		{
+			icp1=icp4=icp9=icp12=0; icp2=icp5=icp10=icp13=1;
+			if(icp3 && icp6 && icp8 && icp11 == 1)
+			{
+				icp1=icp4=icp9=icp12=1; icp2=icp5=icp10=icp13=0;
+			if(icp3 && icp6 && icp8 && icp11 == 1)
+				{
+					lcd_cmd(0x01);
+					delay(10);
+					lcd_data_string("IC OK");
+				}
+			}
+		}
+	}
+	else
+	{
+		 lcd_cmd(0x01);
+		 delay(10);
+		 lcd_data_string("IC not OK");
+		 
+	}
+}
+
+void nand_gt()    //function to check 7400 NAND Gate
+{
+//defining input and output pins of microcontroller
+	icp1 = 0; icp2 = 0;icp3=1;	     //g1
+	icp4 = 0; icp5 = 0; icp6=1;	     //g2
+	icp9 = 0; icp10= 0; icp8=1;	     //g3
+	icp12= 0; icp13= 0; icp11=1;  	 //g4
+	
+
+	icp1=icp2=icp4=icp5=icp9=icp10=icp12=icp13=1;
+	if(icp3 && icp6 && icp8 && icp11 == 0)
+	{
+		icp1=icp2=icp4=icp5=icp9=icp10=icp12=icp13=0;
+		if(icp3 && icp6 && icp8 && icp11 == 1)
+		{
+			icp1=icp4=icp9=icp12=0; icp2=icp5=icp10=icp13=1;
+			if(icp3 && icp6 && icp8 && icp11 == 1)
+			{
+				icp1=icp4=icp9=icp12=1; icp2=icp5=icp10=icp13=0;
+			if(icp3 && icp6 && icp8 && icp11 == 1)
+				{
+					lcd_cmd(0x01);
+					delay(10);
+					lcd_data_string("IC OK");
+				}
+			}
+		}
+	}
+	else
+	{
+				   lcd_cmd(0x01);
+		 delay(10);
+		 lcd_data_string("IC not OK");
+		 								 	 
+	}
+	
+}
+
+void nor_gt()    //function to check 7402 NOR Gate
+{
+	//defining input and output pins of microcontroller
+	icp2 = 0; icp3= 0; icp1 = 1;	     //g1
+	icp5 = 0; icp6= 0; icp4 = 1;      //g2
+	icp8 = 0; icp9= 0; icp10= 1;     //g3
+	icp11= 0; icp12=0; icp13= 1;   //g4
+
+	icp2=icp3=icp5=icp6=icp8=icp9=icp11=icp12=0;
+	if(icp1 && icp4 && icp10 && icp13 == 1)
+	{
+		delay(10);
+		icp2=icp3=icp5=icp6=icp8=icp9=icp11=icp12=1;
+		if(icp1 && icp4 && icp10 && icp13 == 0)
+		{
+			delay(10);
+			icp2=icp5=icp8=icp11=0; 
+			icp3=icp4=icp10=icp13=1;
+			if(icp1 && icp4 && icp10 && icp13 == 0)
+			{
+				delay(10);
+				icp2=icp5=icp8=icp11=1; icp3=icp4=icp10=icp13=0;
+				if(icp1 && icp4 && icp10 && icp13 == 0)
+				{
+					lcd_cmd(0x01);
+					delay(10);
+					lcd_data_string("IC OK");
+				}
+			}
+		}
+	}
+	else
+	{
+		 lcd_cmd(0x01);
+		 delay(10);
+		 lcd_data_string("IC not OK");
+	}
+	//goto again;
+}
+
+void ans()	
+ //function to display IC name and then call func for IC checking
+{
+	if(check==4)		
+          //7400
+	{
+		lcd_cmd(0x01);
+		lcd_cmd(0x82);
+		lcd_data_string("NAND GATE");
+		lcd_cmd(0xC0);
+		lcd_data_string("Checking wait...");
+		delay(100);
+		nand_gt();
+	}
+	else if(check2==4)							   //7402
+	{
+		lcd_cmd(0x01);
+		lcd_cmd(0x82);
+		lcd_data_string("NOR GATE");
+		lcd_cmd(0xC0);
+		lcd_data_string("Checking wait...");
+		delay(100);
+		nor_gt();
+	}
+	else if(check3==4)							   //7404
+	{
+		lcd_cmd(0x01);
+		lcd_cmd(0x82);
+		lcd_data_string("HEX INVERTER");
+		lcd_cmd(0xC0);
+		lcd_data_string("Checking wait...");
+		delay(100);
+		inv_gt();	
+	}
+	else if(check4==4)							   //7408
+	{
+		lcd_cmd(0x01);
+		lcd_cmd(0x82);
+		lcd_data_string("AND GATE");
+		lcd_cmd(0xC0);
+		lcd_data_string("Checking wait...");
+		delay(100);
+		and_gt();
+	}
+	else if(check5==4)							   //7432
+	{
+		lcd_cmd(0x01);
+		lcd_cmd(0x82);
+		lcd_data_string("OR GATE");
+		lcd_cmd(0xC0);
+		lcd_data_string("Checking wait...");
+		delay(100);
+		or_gt();
+	}
+	else												 //other
+	{
+		lcd_cmd(0x01);
+		lcd_cmd(0x82);
+		lcd_data_string("IC Not Found");
+		delay(100);
+		//goto again;	
+	}
+}
+
+void ic_check() //function to check IC
+{
+	if(i<=3)
+	{
+		switch((i+1))									   //7400
+		{
+			 case 1:
+			 {
+			 	if(dig_one==icno[0])
+				{
+					check=check+1;
+				}
+				break;
+			 }
+			 case 2:
+			 {
+			 	if(dig_two==icno[1])
+				{
+					check=check+1;
+				}
+				break;
+			 }
+			 case 3:
+			 {
+			 	if(dig_three==icno[2])
+				{
+					check=check+1;
+				}
+				break;
+			 }
+			 case 4:
+			 {
+			 	if(dig_four==icno[3])
+				{
+					check=check+1;
+				}
+				break;
+			 }
+		}
+		}
+		if(j<=3)									 //7402
+		{
+			 switch((j+1))
+			 {
+			 case 1:
+			 {
+			 	if(dig_five==icno[0])
+				{
+					check2=check2+1;
+				}
+				break;
+			 }
+			 case 2:
+			 {
+			 	if(dig_six==icno[1])
+				{
+					check2=check2+1;
+				}
+				break;
+			 }
+			 case 3:
+			 {
+			 	if(dig_sev==icno[2])
+				{
+					check2=check2+1;
+				}
+				break;
+			 }
+			 case 4:
+			 {
+			 	if(dig_egt==icno[3])
+				{
+					check2=check2+1;
+				}
+				break;
+			 }
+			 }
+
+		}
+		if(k<=3)									 //7404
+		{
+			 switch((k+1))
+			 {
+			 case 1:
+			 {
+			 	if(dig_nine==icno[0])
+				{
+					check3=check3+1;
+				}
+				break;
+			 }
+			 case 2:
+			 {
+			 	if(dig_ten==icno[1])
+				{
+					check3=check3+1;
+				}
+				break;
+			 }
+			 case 3:
+			 {
+			 	if(dig_ele==icno[2])
+				{
+					check3=check3+1;
+				}
+				break;
+			 }
+			 case 4:
+			 {
+			 	if(dig_twe==icno[3])
+				{
+					check3=check3+1;
+				}
+				break;
+			 }
+			 }
+
+		}
+		if(l<=3)									 //7408
+		{
+			 switch((l+1))
+			 {
+			 case 1:
+			 {
+			 	if(dig_tht==icno[0])
+				{
+					check4=check4+1;
+				}
+				break;
+			 }
+			 case 2:
+			 {
+			 	if(dig_fourt==icno[1])
+				{
+					check4=check4+1;
+				}
+				break;
+			 }
+			 case 3:
+			 {
+			 	if(dig_fif==icno[2])
+				{
+					check4=check4+1;
+				}
+				break;
+			 }
+			 case 4:
+			 {
+			 	if(dig_sixt==icno[3])
+				{
+					check4=check4+1;
+				}
+				break;
+			 }
+			 }
+
+		}
+		if(m<=3)									 //7432
+		{
+			 switch((m+1))
+			 {
+			 case 1:
+			 {
+			 	if(dig_sevt==icno[0])
+				{
+					check5=check5+1;
+				}
+				break;
+			 }
+			 case 2:
+			 {
+			 	if(dig_egtt==icno[1])
+				{
+					check5=check5+1;
+				}
+				break;
+			 }
+			 case 3:
+			 {
+			 	if(dig_nnt==icno[2])
+				{
+					check5=check5+1;
+				}
+				break;
+			 }
+			 case 4:
+			 {
+			 	if(dig_tt==icno[3])
+				{
+					check5=check5+1;
+				}
+				break;
+			 }
+			 }
+
+		}
+	
+	if(i==3 || j==3 || k==3 || l==3 || m==3)
+	{
+		ans();
+	}
+}
+
+void display(int a) //Display function for LCD
+{
+	switch(a)
+	{
+	  case 1:
+	  {
+	  	lcd_data('1');
+		delay(30);
+	  	icno[i]=1;
+		ic_check();
+	    break;
+	  }
+	  case 2:
+	  {
+	  	lcd_data('2');
+		delay(30);
+	    icno[i]=2;
+		ic_check();
+		break;
+	  }
+	  case 3:
+	  {
+	  	lcd_data('3');
+		delay(30);
+		icno[i]=3;
+		ic_check();
+	    break;
+	  }
+	  case 4:
+	  {
+	  	lcd_data('4');
+		delay(30);
+		icno[i]=4;
+		ic_check();
+	    break;
+	  }
+	  case 5:
+	  {
+	  	lcd_data('5');
+		delay(30);
+		icno[i]=5;
+		ic_check();
+	    break;
+	  }
+	  case 6:
+	  {
+	  	lcd_data('6');
+		delay(30);
+		icno[i]=6;
+		ic_check();
+	    break;
+	  }
+	  case 7:
+	  {
+	  	lcd_data('7');
+		delay(30);
+		icno[i]=7;
+		ic_check();
+	    break;
+	  }
+	  case 8:
+	  {
+	  	lcd_data('8');
+		delay(30);
+		icno[i]=8;
+		ic_check();
+	    break;
+	  }
+	  case 9:
+	  {
+	  	lcd_data('9');
+		delay(30);
+		icno[i]=9;
+		ic_check();
+	    break;
+	  }
+	  case 0:
+	  {
+	  	lcd_data('0');
+		delay(30);
+		icno[i]=0;
+		ic_check();
+	    break;
+	  }
+	  /*case 11:lcd_data_string("*");
+	    break;
+	  case 12:lcd_data_string("#");
+	    break;*/
+	}
+}
+
+void check_col1() //Function for checking column one
+{
+	row1=row2=row3=row4=1;
+
+	row1=0;
+	if(col1==0)
+	{
+		delay(10);
+		display(1);
+	}
+	row1=1;
+
+	row2=0;
+	if(col1==0)
+	{
+	delay(10);
+	display(4);}
+	row2=1;
+
+	row3=0;
+	if(col1==0)
+	{
+	delay(10);
+	display(7);}
+	row3=1;
+
+	row4=0;
+	if(col1==0)
+	{
+	delay(10);
+	display(11);} 
+	row4=1;
+}
+
+void check_col2() //Function for checking column two
+{
+	row1=row2=row3=row4=1;
+
+	row1=0;
+	if(col2==0)
+	{
+	delay(10);
+	display(2);}
+	row1=1;
+
+	row2=0;
+	if(col2==0)
+	{
+	delay(10);
+	display(5);}
+	row2=1;
+
+	row3=0;
+	if(col2==0)
+	{display(8);}
+	row3=1;
+
+	row4=0;
+	if(col2==0)
+	{
+	delay(10);
+	display(0);}
+	row4=1;
+}
+
+void check_col3() //Function for checking column three
+{
+	row1=row2=row3=row4=1;
+
+	row1=0;
+	if(col3==0)
+	{
+	delay(10);
+	display(3);}
+	row1=1;
+
+	row2=0;
+	if(col3==0)
+	{
+	delay(10);
+	display(6);}
+	row2=1;
+
+	row3=0;
+	if(col3==0)
+	{
+	delay(10);
+	display(9);}
+	row3=1;
+
+	row4=0;
+	if(col3==0)
+	{
+	delay(10);
+	display(12);}  //For #
+	row4=1;
+}		
+
+void keypad()
+{
+	
+	  if(col1==0)
+	  	{check_col1();}
+	  else if(col2==0)
+	  	{check_col2();}
+	  else if(col3==0)
+	    {check_col3();}
+	
+}	
+
+void main()
+{
+/*	lcd_data_string("WELCOME TO DIGITAL IC TESTER");
+	int k;
+	for(k=0;k<=28+16;k++)
+	{
+		lcd_cmd(0x18);
+		delay(100);
+	}*/
+	//unsigned int n;
+	col1=col2=col3=1;  //Input Port
+	lcd();		  
+	//lcd_data_string("Welcome to");
+	//lcd_cmd(0xC0);
+	lcd_data_string("74xx IC Tester");
+	delay(sec);
+	delay(sec);
+	lcd_cmd(0x01);
+	lcd_data_string	("Enter IC no.:");
+	lcd_cmd(0xC0);
+
+	while(1)
+	{
+		  check=0;
+		  row1=row2=row3=row4=0;
+		  while(col1==1 && col2==1 && col3==1);
+			  for(i=0,j=0,k=0,l=0,m=0;i<4,j<4,k<4,l<4,m<4;i++,j++,k++,l++,m++)
+			  {
+				  delay(100);
+				  row1=row2=row3=row4=0;
+				  while(col1==1 && col2==1 && col3==1);
+				  row1=row2=row3=row4=0;
+				  keypad();
+			  }
+	
+		 
+	}
+}																														
+
+
+
+
+
+
+
+
